@@ -1,4 +1,5 @@
 .env
+data/reports.json
 data/.chroma/
 __pycache__/
 *.pyc

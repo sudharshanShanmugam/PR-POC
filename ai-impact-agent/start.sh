@@ -3,18 +3,13 @@
 
 set -e
 
-# Load .env
-if [ -f .env ]; then
-  export $(grep -v '^#' .env | grep -v '^$' | xargs)
-fi
-
 # Kill previous instances
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
 pkill -f cloudflared 2>/dev/null || true
 
-# Start server
+# Start server (python-dotenv loads .env automatically)
 echo "Starting server..."
-python3 -m uvicorn main:app --port 8080 > /tmp/g4-agent.log 2>&1 &
+python3 -m dotenv run -- python3 -m uvicorn main:app --port 8080 > /tmp/g4-agent.log 2>&1 &
 SERVER_PID=$!
 
 for i in $(seq 1 10); do
