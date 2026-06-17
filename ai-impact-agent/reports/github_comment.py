@@ -30,9 +30,19 @@ def render_comment(report: ImpactReport) -> str:
     ) or "- N/A"
     files_md = "\n".join(f"- `{f}`" for f in report.changed_files)
 
+    jira_section = ""
+    if report.jira_key:
+        jira_section = f"""
+### 🔗 Linked Jira Story
+| Field | Value |
+|-------|-------|
+| **Issue** | `{report.jira_key}` |
+| **Summary** | {report.jira_summary or "N/A"} |
+"""
+
     return f"""\
 ## 🤖 AI Impact Analysis
-
+{jira_section}
 | Field | Value |
 |-------|-------|
 | **Change Type** | {report.change_type} |
