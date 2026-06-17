@@ -40,3 +40,5 @@ class ImpactReport(BaseModel):
     summary: str
     changed_files: list[str]
     retrieved_context: list[str] = []
+    jira_key: Optional[str] = None
+    jira_summary: Optional[str] = None

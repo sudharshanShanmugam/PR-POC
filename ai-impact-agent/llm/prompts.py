@@ -103,6 +103,11 @@ Author: {author}
 Branch: {head_branch} -> {base_branch}
 
 ========================
+JIRA STORY
+========================
+{jira_context}
+
+========================
 CHANGED FILES
 ========================
 {changed_files_summary}

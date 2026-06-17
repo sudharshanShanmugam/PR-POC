@@ -85,10 +85,23 @@ def rule_based_analysis(files: list[ChangedFile]) -> dict:
 
 def analyze_pr(pr: PRDetails, files: list[ChangedFile]) -> ImpactReport:
     """
-    Full pipeline: RAG retrieval → LLM analysis.
+    Full pipeline: Jira story fetch → RAG retrieval → LLM analysis.
     Falls back to rule-based analysis if no API key is available.
     """
     has_llm_key = bool(os.getenv("DEEPINFRA_API_KEY"))
+
+    # Extract Jira key from PR title or branch name
+    jira_story: dict | None = None
+    try:
+        from jira.jira_connector import JiraConnector, extract_jira_key
+        jira_key = extract_jira_key(pr.title) or extract_jira_key(pr.head_branch)
+        if jira_key:
+            logger.info("Fetching Jira story: %s", jira_key)
+            jira_story = JiraConnector().get_issue(jira_key)
+            if jira_story:
+                logger.info("Jira context loaded: %s — %s", jira_key, jira_story.get("summary"))
+    except Exception as exc:
+        logger.warning("Jira lookup skipped: %s", exc)
 
     # Attempt RAG retrieval (silently skipped if ChromaDB unavailable)
     retrieved_context: list[str] = []
@@ -101,7 +114,7 @@ def analyze_pr(pr: PRDetails, files: list[ChangedFile]) -> ImpactReport:
     if has_llm_key:
         try:
             from llm.impact_chain import run_impact_chain
-            report = run_impact_chain(pr, files, retrieved_context)
+            report = run_impact_chain(pr, files, retrieved_context, jira_story=jira_story)
             # Persist PR summary for future RAG retrievals
             try:
                 from rag.vector_store import add_pr_summary
@@ -123,4 +136,6 @@ def analyze_pr(pr: PRDetails, files: list[ChangedFile]) -> ImpactReport:
         summary=data["summary"],
         changed_files=[f.filename for f in files],
         retrieved_context=retrieved_context,
+        jira_key=jira_story.get("key") if jira_story else None,
+        jira_summary=jira_story.get("summary") if jira_story else None,
     )

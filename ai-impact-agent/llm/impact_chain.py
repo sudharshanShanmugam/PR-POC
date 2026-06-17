@@ -38,6 +38,23 @@ def _summarise_files(files: list[ChangedFile]) -> str:
     return "\n".join(lines)
 
 
+def _format_jira_context(story: Optional[dict]) -> str:
+    if not story:
+        return "No Jira story linked."
+    lines = [
+        f"Key:              {story.get('key', 'N/A')}",
+        f"Type:             {story.get('issue_type', 'N/A')}",
+        f"Summary:          {story.get('summary', 'N/A')}",
+        "",
+        "Description:",
+        story.get("description") or "N/A",
+        "",
+        "Acceptance Criteria:",
+        story.get("acceptance_criteria") or "N/A",
+    ]
+    return "\n".join(lines)
+
+
 def _build_diff_text(files: list[ChangedFile], max_chars: int = 6000) -> str:
     parts = []
     total = 0
@@ -56,6 +73,7 @@ def run_impact_chain(
     pr: PRDetails,
     files: list[ChangedFile],
     retrieved_context: Optional[list[str]] = None,
+    jira_story: Optional[dict] = None,
 ) -> ImpactReport:
     """Call the LLM chain and parse structured ImpactReport."""
     llm = _build_llm()
@@ -76,6 +94,7 @@ def run_impact_chain(
         "changed_files_summary": _summarise_files(files),
         "diff_text": _build_diff_text(files),
         "retrieved_context": context_text,
+        "jira_context": _format_jira_context(jira_story),
     })
 
     # Strip markdown code fences if the model wrapped the JSON
@@ -103,4 +122,6 @@ def run_impact_chain(
         summary=data.get("summary", ""),
         changed_files=[f.filename for f in files],
         retrieved_context=retrieved_context or [],
+        jira_key=jira_story.get("key") if jira_story else None,
+        jira_summary=jira_story.get("summary") if jira_story else None,
     )

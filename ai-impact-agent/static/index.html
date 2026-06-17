@@ -176,13 +176,15 @@ function renderDetail(r) {
       <div class="card rounded-xl p-5 mb-5">
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0">
-            <div class="flex items-center gap-2 mb-1">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
               <span class="text-gray-500 text-sm font-mono">#${r.pr_number}</span>
               <span class="text-gray-600">·</span>
               <span class="text-gray-400 text-sm">${r.repo}</span>
+              ${r.jira_key ? `<a href="#" class="text-xs px-2 py-0.5 rounded font-mono" style="background:#1a2f5a;color:#79c0ff;border:1px solid #1f3a8f">🔗 ${r.jira_key}</a>` : ''}
               ${prLink}
             </div>
             <h2 class="text-white text-lg font-semibold leading-snug">PR #${r.pr_number} Analysis</h2>
+            ${r.jira_summary ? `<p class="text-xs text-blue-300 mt-1">📋 ${r.jira_summary}</p>` : ''}
           </div>
           <div class="flex flex-col items-end gap-2 flex-shrink-0">
             <span class="text-lg px-3 py-1 rounded-lg font-medium ${riskColor[r.risk]||'badge-medium'}">${riskIcon[r.risk]||''} ${r.risk} Risk</span>
