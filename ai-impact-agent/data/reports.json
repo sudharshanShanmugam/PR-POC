@@ -1,0 +1,92 @@
+[
+  {
+    "pr_number": 5,
+    "repo": "it-support",
+    "affected_components": [
+      "Header component"
+    ],
+    "potentially_impacted_components": [
+      "Layout component",
+      "Pages that include Header"
+    ],
+    "change_type": "Refactor",
+    "risk": "Low",
+    "confidence": 95,
+    "risk_reasons": [
+      "UI-only change",
+      "No backend or business logic impact",
+      "Removal of notifications link does not affect core functionality"
+    ],
+    "testing_scope": [
+      "Smoke Testing",
+      "Functional Testing",
+      "Regression Testing"
+    ],
+    "summary": "The Header component was refactored to remove the notifications link and badge. This is a UI-only change with no impact on backend services. Low risk; basic UI smoke, functional, and regression tests are sufficient.",
+    "changed_files": [
+      "frontend/src/components/layout/Header.tsx"
+    ],
+    "retrieved_context": [
+      "[Source: pr/it-support/#4]\nThe Header component was cleaned up by removing the notifications link and badge logic. This is a UI-only refactor with no effect on backend services or core functionality. Low risk; basic UI smoke and functional regression tests are sufficient.",
+      "[Source: pr/it-support/#1]\nThe Header component was cleaned up by removing the notifications link and its badge logic. This UI-only change simplifies the header layout and has no impact on backend services or core application functionality.",
+      "[Source: pr/it-support/#2]\nThe Header component was cleaned up by removing the notifications link and its badge logic. This UI-only change simplifies the header layout and has no impact on backend services or core application functionality.",
+      "[Source: past_pr_summaries.md]\n# Historical PR Summaries\n\n## PR-123: Fix payment timeout\n**Files changed:** PaymentService.java, AppConfig.java  \n**Result:** Introduced a 5s hard timeout in `validatePayment()`. Caused payment timeout issues in high-load scenarios. Reverted in PR-127.\n\n## PR-201: Order status state machine refactor\n**Files changed:** OrderController.java, OrderStatus.java  \n**Result:** Simplified order status transitions. No downstream issues. Safe change.\n\n## PR-312: Auth token expiry update\n**Files changed:** AuthService.java, SessionConfig.java  \n**Result:** Shortened session token TTL from 24h to 2h. Caused increased login frequency complaints. Partially reverted.\n\n## PR-415: Invoice PDF rendering upgrade\n**Files changed:** InvoiceGenerator.java, pom.xml  \n**Result:** Upgraded PDF library. No impact on payment or order flows. Low risk change.",
+      "[Source: pr/payment-service/#42]\nThe PR adds retry handling for transient payment failures and raises the shared order timeout constant. This impacts the core payment flow and checkout latency, potentially affecting downstream services. Comprehensive integration, functional, regression, and performance tests are required."
+    ],
+    "pr_url": "https://github.com/sudharshan591/it-support/pull/5"
+  },
+  {
+    "pr_number": 4,
+    "repo": "it-support",
+    "affected_components": [
+      "frontend/src/components/layout/Header.tsx"
+    ],
+    "potentially_impacted_components": [],
+    "change_type": "Refactor",
+    "risk": "Low",
+    "confidence": 95,
+    "risk_reasons": [
+      "UI-only change with no backend or business logic impact",
+      "Removal of notifications link does not affect APIs or data flows"
+    ],
+    "testing_scope": [
+      "Smoke Testing",
+      "Functional Testing",
+      "Regression Testing"
+    ],
+    "summary": "The Header component was cleaned up by removing the notifications link and badge logic. This is a UI-only refactor with no effect on backend services or core functionality. Low risk; basic UI smoke and functional regression tests are sufficient.",
+    "changed_files": [
+      "frontend/src/components/layout/Header.tsx"
+    ],
+    "retrieved_context": [
+      "[Source: pr/it-support/#1]\nThe Header component was cleaned up by removing the notifications link and its badge logic. This UI-only change simplifies the header layout and has no impact on backend services or core application functionality.",
+      "[Source: pr/it-support/#2]\nThe Header component was cleaned up by removing the notifications link and its badge logic. This UI-only change simplifies the header layout and has no impact on backend services or core application functionality.",
+      "[Source: pr/it-support/#4]\nThe Header component was cleaned up by removing the notifications link and its unread badge logic. This UI-only change simplifies the header layout and has no impact on backend services or core application functionality.",
+      "[Source: past_pr_summaries.md]\n# Historical PR Summaries\n\n## PR-123: Fix payment timeout\n**Files changed:** PaymentService.java, AppConfig.java  \n**Result:** Introduced a 5s hard timeout in `validatePayment()`. Caused payment timeout issues in high-load scenarios. Reverted in PR-127.\n\n## PR-201: Order status state machine refactor\n**Files changed:** OrderController.java, OrderStatus.java  \n**Result:** Simplified order status transitions. No downstream issues. Safe change.\n\n## PR-312: Auth token expiry update\n**Files changed:** AuthService.java, SessionConfig.java  \n**Result:** Shortened session token TTL from 24h to 2h. Caused increased login frequency complaints. Partially reverted.\n\n## PR-415: Invoice PDF rendering upgrade\n**Files changed:** InvoiceGenerator.java, pom.xml  \n**Result:** Upgraded PDF library. No impact on payment or order flows. Low risk change.",
+      "[Source: pr/payment-service/#42]\nThe PR adds retry handling for transient payment failures and raises the shared order timeout constant. This impacts the core payment flow and checkout latency, potentially affecting downstream services. Comprehensive integration, functional, regression, and performance tests are required."
+    ],
+    "pr_url": "https://github.com/sudharshan591/it-support/pull/4"
+  },
+  {
+    "pr_number": 42,
+    "repo": "it-support",
+    "affected_components": [
+      "Payment Service",
+      "Order Service"
+    ],
+    "change_type": "Feature",
+    "risk": "High",
+    "summary": "Adds retry handling for transient payment failures in PaymentService, attempting up to three attempts before giving up. Also raises ORDER_TIMEOUT_MS to 10 seconds, affecting OrderController checkout timeout. Potential impact on checkout latency and idempotency.",
+    "changed_files": [
+      "src/PaymentService.java",
+      "src/OrderController.java",
+      "src/config/AppConfig.java",
+      "test/PaymentServiceTest.java"
+    ],
+    "retrieved_context": [
+      "[Source: payment_service.md]",
+      "[Source: order_service.md]"
+    ],
+    "pr_url": "https://github.com/sudharshan591/it-support/pull/42"
+  }
+]

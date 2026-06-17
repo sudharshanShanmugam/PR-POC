@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>G4 AI Impact Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .card { background: #161b22; border: 1px solid #30363d; }
+    .card-hover:hover { border-color: #58a6ff; background: #1c2230; cursor: pointer; }
+    .badge-high    { background: #3d1b1b; color: #f85149; border: 1px solid #6e2020; }
+    .badge-medium  { background: #2d2208; color: #e3b341; border: 1px solid #5a3e0a; }
+    .badge-low     { background: #122318; color: #3fb950; border: 1px solid #1a4229; }
+    .badge-type    { background: #1c2230; color: #79c0ff; border: 1px solid #1f3a5f; }
+    .tag           { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+    .selected      { border-color: #58a6ff !important; background: #1c2230 !important; }
+    .dot-high   { background: #f85149; }
+    .dot-medium { background: #e3b341; }
+    .dot-low    { background: #3fb950; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1117; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .fade-in { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-10" style="background:#161b22">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg" style="background:#1f3a5f">🤖</div>
+      <div>
+        <h1 class="font-semibold text-white text-sm">G4 AI Impact Agent</h1>
+        <p class="text-xs text-gray-500">PR Analysis Dashboard</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div id="live-dot" class="flex items-center gap-2 text-xs text-gray-400">
+        <span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>
+        Live
+      </div>
+      <span id="pr-count" class="text-xs text-gray-500">0 PRs analyzed</span>
+    </div>
+  </header>
+
+  <div class="flex h-screen" style="height:calc(100vh - 61px)">
+
+    <!-- Sidebar -->
+    <aside class="w-80 border-r border-gray-800 overflow-y-auto flex-shrink-0">
+      <div class="p-4 border-b border-gray-800">
+        <input id="search" type="text" placeholder="Search PRs..."
+          class="w-full px-3 py-2 rounded-lg text-sm text-gray-300 placeholder-gray-600 border border-gray-700 focus:outline-none focus:border-blue-500"
+          style="background:#0d1117" oninput="filterList()" />
+      </div>
+      <div id="pr-list" class="p-3 space-y-2">
+        <div class="text-center text-gray-600 text-sm py-12">
+          No PRs analyzed yet.<br/>Open a PR on your connected repo.
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main panel -->
+    <main class="flex-1 overflow-y-auto">
+      <div id="empty-state" class="flex flex-col items-center justify-center h-full text-gray-600">
+        <div class="text-5xl mb-4">🔍</div>
+        <p class="text-lg font-medium text-gray-500">Select a PR to view analysis</p>
+        <p class="text-sm mt-1">Or open a pull request on your connected GitHub repo</p>
+      </div>
+      <div id="detail-panel" class="hidden p-6 fade-in max-w-4xl mx-auto"></div>
+    </main>
+
+  </div>
+
+<script>
+let allReports = [];
+let selected = null;
+
+const riskColor = { High:'badge-high', Medium:'badge-medium', Low:'badge-low' };
+const riskDot   = { High:'dot-high',   Medium:'dot-medium',   Low:'dot-low'   };
+const riskIcon  = { High:'🔴', Medium:'🟡', Low:'🟢' };
+
+async function fetchReports() {
+  try {
+    const res = await fetch('/api/reports');
+    const data = await res.json();
+    if (JSON.stringify(data) !== JSON.stringify(allReports)) {
+      allReports = data;
+      renderList(allReports);
+      document.getElementById('pr-count').textContent = `${data.length} PR${data.length!==1?'s':''} analyzed`;
+      if (selected) {
+        const updated = allReports.find(r => r.repo===selected.repo && r.pr_number===selected.pr_number);
+        if (updated) renderDetail(updated);
+      }
+    }
+  } catch(e) { console.warn('fetch error', e); }
+}
+
+function filterList() {
+  const q = document.getElementById('search').value.toLowerCase();
+  renderList(allReports.filter(r =>
+    r.pr_number.toString().includes(q) ||
+    r.repo.toLowerCase().includes(q) ||
+    (r.summary||'').toLowerCase().includes(q) ||
+    (r.affected_components||[]).join(' ').toLowerCase().includes(q)
+  ));
+}
+
+function renderList(reports) {
+  const el = document.getElementById('pr-list');
+  if (!reports.length) {
+    el.innerHTML = `<div class="text-center text-gray-600 text-sm py-12">No PRs analyzed yet.<br/>Open a PR on your connected repo.</div>`;
+    return;
+  }
+  el.innerHTML = reports.map(r => `
+    <div class="card card-hover rounded-lg p-3 ${selected && selected.pr_number===r.pr_number && selected.repo===r.repo ? 'selected' : ''}"
+         onclick="selectPR('${r.repo}', ${r.pr_number})">
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full flex-shrink-0 ${riskDot[r.risk]||'dot-medium'}"></span>
+          <span class="text-xs text-gray-400 font-mono flex-shrink-0">#${r.pr_number}</span>
+          <span class="text-xs text-gray-500 truncate">${r.repo}</span>
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${riskColor[r.risk]||'badge-medium'}">${r.risk}</span>
+      </div>
+      <p class="text-xs text-gray-300 leading-relaxed line-clamp-2">${r.summary||'No summary'}</p>
+      <div class="mt-2 flex flex-wrap gap-1">
+        ${(r.affected_components||[]).slice(0,3).map(c=>`<span class="tag text-xs px-2 py-0.5 rounded">${c}</span>`).join('')}
+        ${(r.affected_components||[]).length>3?`<span class="tag text-xs px-2 py-0.5 rounded">+${r.affected_components.length-3}</span>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectPR(repo, prNumber) {
+  const r = allReports.find(x => x.repo===repo && x.pr_number===prNumber);
+  if (!r) return;
+  selected = r;
+  renderList(allReports.filter(x => {
+    const q = document.getElementById('search').value.toLowerCase();
+    return !q || x.pr_number.toString().includes(q) || x.repo.toLowerCase().includes(q) || (x.summary||'').toLowerCase().includes(q);
+  }));
+  renderDetail(r);
+}
+
+function renderDetail(r) {
+  document.getElementById('empty-state').classList.add('hidden');
+  const panel = document.getElementById('detail-panel');
+  panel.classList.remove('hidden');
+
+  const components = (r.affected_components||[]).map(c=>`
+    <div class="flex items-center gap-2 p-3 rounded-lg" style="background:#0d1117;border:1px solid #21262d">
+      <span class="text-blue-400">⬡</span>
+      <span class="text-sm text-gray-200">${c}</span>
+    </div>`).join('') || '<p class="text-gray-500 text-sm">None identified</p>';
+
+  const files = (r.changed_files||[]).map(f=>`
+    <div class="flex items-center gap-2 py-1.5 border-b border-gray-800 last:border-0">
+      <span class="text-gray-600">📄</span>
+      <code class="text-xs text-blue-300">${f}</code>
+    </div>`).join('') || '<p class="text-gray-500 text-sm">None</p>';
+
+  const context = (r.retrieved_context||[]).map(c=>{
+    const firstLine = c.split('\n')[0];
+    return `<span class="tag text-xs px-2 py-1 rounded">${firstLine.replace('[Source: ','').replace(']','')}</span>`;
+  }).join('') || '<span class="text-gray-600 text-xs">No context retrieved</span>';
+
+  const prLink = r.pr_url ? `<a href="${r.pr_url}" target="_blank" class="text-blue-400 hover:underline text-sm">View on GitHub ↗</a>` : '';
+
+  panel.innerHTML = `
+    <div class="fade-in">
+      <!-- PR Header -->
+      <div class="card rounded-xl p-5 mb-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-gray-500 text-sm font-mono">#${r.pr_number}</span>
+              <span class="text-gray-600">·</span>
+              <span class="text-gray-400 text-sm">${r.repo}</span>
+              ${prLink}
+            </div>
+            <h2 class="text-white text-lg font-semibold leading-snug">PR #${r.pr_number} Analysis</h2>
+          </div>
+          <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <span class="text-lg px-3 py-1 rounded-lg font-medium ${riskColor[r.risk]||'badge-medium'}">${riskIcon[r.risk]||''} ${r.risk} Risk</span>
+            <span class="badge-type text-xs px-2 py-1 rounded">${r.change_type||'Unknown'}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid grid-cols-4 gap-3 mb-5">
+        <div class="card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-white">${(r.affected_components||[]).length}</div>
+          <div class="text-xs text-gray-500 mt-1">Affected</div>
+        </div>
+        <div class="card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-blue-400">${(r.potentially_impacted_components||[]).length}</div>
+          <div class="text-xs text-gray-500 mt-1">At Risk</div>
+        </div>
+        <div class="card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-white">${(r.changed_files||[]).length}</div>
+          <div class="text-xs text-gray-500 mt-1">Files</div>
+        </div>
+        <div class="card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold ${r.risk==='High'?'text-red-400':r.risk==='Medium'?'text-yellow-400':'text-green-400'}">${r.confidence||0}%</div>
+          <div class="text-xs text-gray-500 mt-1">Confidence</div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="card rounded-xl p-5 mb-5">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">📝 AI Summary</h3>
+        <p class="text-gray-200 text-sm leading-relaxed">${r.summary||'No summary available.'}</p>
+      </div>
+
+      <!-- Components grid -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div class="card rounded-xl p-5">
+          <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">📦 Directly Affected</h3>
+          <div class="space-y-2">${components}</div>
+        </div>
+        <div class="card rounded-xl p-5">
+          <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">🔗 Potentially Impacted</h3>
+          <div class="space-y-2">${(r.potentially_impacted_components||[]).map(c=>`
+            <div class="flex items-center gap-2 p-3 rounded-lg" style="background:#0d1117;border:1px solid #21262d">
+              <span class="text-yellow-500">⬡</span>
+              <span class="text-sm text-gray-200">${c}</span>
+            </div>`).join('') || '<p class="text-gray-500 text-sm">None identified</p>'}</div>
+        </div>
+      </div>
+
+      <!-- Risk reasons -->
+      <div class="card rounded-xl p-5 mb-5">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">⚠️ Risk Reasons</h3>
+        <ul class="space-y-1">${(r.risk_reasons||[]).map(reason=>`
+          <li class="flex items-start gap-2 text-sm text-gray-300">
+            <span class="text-red-400 mt-0.5 flex-shrink-0">•</span>${reason}
+          </li>`).join('') || '<p class="text-gray-500 text-sm">N/A</p>'}</ul>
+      </div>
+
+      <!-- Testing scope -->
+      <div class="card rounded-xl p-5 mb-5">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">🧪 Testing Scope</h3>
+        <div class="flex flex-wrap gap-2">${(r.testing_scope||[]).map(t=>`
+          <span class="px-3 py-1.5 rounded-lg text-xs font-medium" style="background:#1a2f1a;color:#3fb950;border:1px solid #2a5a2a">${t}</span>`
+        ).join('') || '<p class="text-gray-500 text-sm">N/A</p>'}</div>
+      </div>
+
+      <!-- Changed Files -->
+      <div class="card rounded-xl p-5 mb-5">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">📁 Changed Files (${(r.changed_files||[]).length})</h3>
+        <div>${files}</div>
+      </div>
+
+      <!-- RAG Context -->
+      <div class="card rounded-xl p-5">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">🔍 Retrieved Context</h3>
+        <div class="flex flex-wrap gap-2">${context}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Poll every 5 seconds for new reports
+fetchReports();
+setInterval(fetchReports, 5000);
+</script>
+</body>
+</html>
