@@ -32,12 +32,27 @@ def render_comment(report: ImpactReport) -> str:
 
     jira_section = ""
     if report.jira_key:
+        description = report.jira_description or "_No description provided._"
+        ac = report.jira_acceptance_criteria or "_No acceptance criteria defined._"
         jira_section = f"""
 ### 🔗 Linked Jira Story
+
 | Field | Value |
 |-------|-------|
 | **Issue** | `{report.jira_key}` |
 | **Summary** | {report.jira_summary or "N/A"} |
+| **Type** | {report.jira_key.split("-")[0] if report.jira_key else "N/A"} |
+| **Status** | {report.jira_status or "N/A"} |
+| **Priority** | {report.jira_priority or "N/A"} |
+| **Assignee** | {report.jira_assignee or "Unassigned"} |
+| **Sprint** | {report.jira_sprint or "N/A"} |
+
+**📄 Description:**
+{description}
+
+**✅ Acceptance Criteria:**
+{ac}
+
 """
 
     return f"""\

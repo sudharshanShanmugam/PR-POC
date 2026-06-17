@@ -42,3 +42,9 @@ class ImpactReport(BaseModel):
     retrieved_context: list[str] = []
     jira_key: Optional[str] = None
     jira_summary: Optional[str] = None
+    jira_description: Optional[str] = None
+    jira_acceptance_criteria: Optional[str] = None
+    jira_status: Optional[str] = None
+    jira_priority: Optional[str] = None
+    jira_assignee: Optional[str] = None
+    jira_sprint: Optional[str] = None

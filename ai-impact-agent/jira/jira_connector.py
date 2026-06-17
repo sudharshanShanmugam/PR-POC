@@ -54,18 +54,26 @@ class JiraConnector:
 
 
 def _parse_issue(data: dict) -> dict:
-    """Extract summary, description, and acceptance criteria from a Jira issue."""
+    """Extract all relevant fields from a Jira issue."""
     fields = data.get("fields", {})
-    summary = fields.get("summary", "")
-    issue_type = fields.get("issuetype", {}).get("name", "")
 
     description = _extract_text(fields.get("description"))
     acceptance_criteria = _extract_text(fields.get("customfield_10016")) or _extract_ac_from_description(description)
 
+    assignee = fields.get("assignee") or {}
+    reporter = fields.get("reporter") or {}
+    sprint_list = fields.get("customfield_10020") or []
+    sprint = sprint_list[0].get("name") if sprint_list else None
+
     return {
         "key": data.get("key", ""),
-        "summary": summary,
-        "issue_type": issue_type,
+        "summary": fields.get("summary", ""),
+        "issue_type": fields.get("issuetype", {}).get("name", ""),
+        "status": fields.get("status", {}).get("name", ""),
+        "priority": fields.get("priority", {}).get("name", ""),
+        "assignee": assignee.get("displayName", "Unassigned"),
+        "reporter": reporter.get("displayName", ""),
+        "sprint": sprint,
         "description": description,
         "acceptance_criteria": acceptance_criteria,
     }

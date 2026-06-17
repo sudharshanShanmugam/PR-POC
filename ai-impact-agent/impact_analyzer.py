@@ -83,6 +83,21 @@ def rule_based_analysis(files: list[ChangedFile]) -> dict:
     }
 
 
+def _jira_fields(story: dict | None) -> dict:
+    if not story:
+        return {}
+    return {
+        "jira_key": story.get("key"),
+        "jira_summary": story.get("summary"),
+        "jira_description": story.get("description"),
+        "jira_acceptance_criteria": story.get("acceptance_criteria"),
+        "jira_status": story.get("status"),
+        "jira_priority": story.get("priority"),
+        "jira_assignee": story.get("assignee"),
+        "jira_sprint": story.get("sprint"),
+    }
+
+
 def analyze_pr(pr: PRDetails, files: list[ChangedFile]) -> ImpactReport:
     """
     Full pipeline: Jira story fetch → RAG retrieval → LLM analysis.
@@ -136,6 +151,5 @@ def analyze_pr(pr: PRDetails, files: list[ChangedFile]) -> ImpactReport:
         summary=data["summary"],
         changed_files=[f.filename for f in files],
         retrieved_context=retrieved_context,
-        jira_key=jira_story.get("key") if jira_story else None,
-        jira_summary=jira_story.get("summary") if jira_story else None,
+        **_jira_fields(jira_story),
     )

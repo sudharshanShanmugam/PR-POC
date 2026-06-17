@@ -124,4 +124,10 @@ def run_impact_chain(
         retrieved_context=retrieved_context or [],
         jira_key=jira_story.get("key") if jira_story else None,
         jira_summary=jira_story.get("summary") if jira_story else None,
+        jira_description=jira_story.get("description") if jira_story else None,
+        jira_acceptance_criteria=jira_story.get("acceptance_criteria") if jira_story else None,
+        jira_status=jira_story.get("status") if jira_story else None,
+        jira_priority=jira_story.get("priority") if jira_story else None,
+        jira_assignee=jira_story.get("assignee") if jira_story else None,
+        jira_sprint=jira_story.get("sprint") if jira_story else None,
     )
